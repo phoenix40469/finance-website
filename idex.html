@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📈 Interactive Stock Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TradingView Widget -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html { scroll-behavior: smooth; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0d1117;
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+        
+        .chat-message {
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.25rem;
+            margin-bottom: 0.75rem;
+            max-width: 85%;
+            word-wrap: break-word;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .user-message {
+            background: linear-gradient(to right, #4f46e5, #818cf8); /* indigo-600 to indigo-400 */
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .bot-message {
+            background-color: #161b22;
+            color: #c9d1d9;
+            align-self: flex-start;
+            border: 1px solid #30363d;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .dashboard-card {
+            background: #161b22;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            border-color: #4f46e5;
+        }
+        .metric-value {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            color: #22c55e; /* green-500 */
+        }
+        .metric-label {
+            font-size: 0.875rem; /* text-sm */
+            color: #8b949e; /* gray-400 */
+        }
+        .opinion-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        .buy-badge { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .sell-badge { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .hold-badge { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    </style>
+</head>
+<body class="text-gray-300">
+
+    <!-- =========== Header Bar =========== -->
+    <header id="main-header" class="hidden fixed top-0 left-0 right-0 bg-black/50 backdrop-blur-lg border-b border-gray-800 p-4 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="goHome()">
+            <div class="text-2xl">📈</div>
+            <h1 class="text-xl font-bold text-white">Stock Data AI</h1>
+        </div>
+        <nav class="flex items-center space-x-4">
+            <button onclick="showPage('stock-app-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">Dashboard</button>
+            <button onclick="showPage('commands-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">Commands</button>
+            <button onclick="showPage('api-key-info-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">API Key</button>
+        </nav>
+    </header>
+
+    <main id="app-container">
+        <!-- =========== Landing Page =========== -->
+        <div id="landing-page" class="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+             <div class="text-6xl mb-4 animate-pulse">📊</div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Welcome to Stock Data AI</h1>
+            <p class="text-lg text-gray-400 mt-4 max-w-2xl">Your intelligent dashboard for real-time stock analysis. Enter a company name to get financial data, charts, and rule-based opinions.</p>
+            <p class="text-md text-gray-500 mt-2">(Supports US stocks only)</p>
+            <button id="launch-app-btn" class="mt-8 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">Launch Dashboard</button>
+            <p class="absolute bottom-4 text-gray-600 text-sm">Made by Gurtej</p>
+        </div>
+
+        <!-- =========== Stock App Page =========== -->
+        <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-4 pt-24">
+            <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
+                <div id="chat-area" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
+                    <div class="bot-message">Hello! Enter a stock ticker or company name to begin. See the "Commands" page for more actions.</div>
+                </div>
+                <div class="pt-4 sticky bottom-4">
+                    <div class="flex items-center space-x-2 p-2 bg-[#161b22] border border-gray-700 rounded-xl shadow-lg">
+                        <input id="stock-input" class="flex-grow p-2 bg-transparent focus:outline-none resize-none text-gray-300" placeholder="Enter a company, ticker, or command...">
+                        <button onclick="processInput()" class="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full hover:opacity-90 transition-opacity"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                        <button id="api-key-button" class="p-2 rounded-full hover:bg-gray-800 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =========== Commands Page =========== -->
+        <div id="commands-page" class="hidden min-h-screen flex flex-col items-center justify-center p-4 pt-24 text-center">
+            <h1 class="text-4xl font-bold text-white mb-8">Available Commands</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+                <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">Search for a Stock</h2><p class="text-gray-400">Enter any US company name or stock ticker to get its latest financial data.</p><p class="mt-4 text-sm text-gray-500">e.g., `Microsoft`, `TSLA`</p></div>
+                <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">Buy or Sell Opinion</h2><p class="text-gray-400">After searching, type `buy or sell` to get a rule-based opinion on its metrics.</p><p class="mt-4 text-sm text-gray-500">e.g., `buy or sell`</p></div>
+                <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">Display Graph</h2><p class="text-gray-400">After searching, type `graph` to view its historical price chart.</p><p class="mt-4 text-sm text-gray-500">e.g., `graph`</p></div>
+                <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">View Fundamentals</h2><p class="text-gray-400">After a search, type `fundamentals` to see a detailed list of all available financial metrics.</p><p class="mt-4 text-sm text-gray-500">e.g., `fundamentals`</p></div>
+            </div>
+        </div>
+        
+        <!-- =========== API Key Info Page =========== -->
+        <div id="api-key-info-page" class="hidden min-h-screen flex flex-col items-center justify-center p-4 pt-24 text-center">
+            <h1 class="text-4xl font-bold text-white mb-4">Default Finnhub API Key</h1>
+            <p class="text-gray-400 mb-4 max-w-2xl">This app is pre-configured with a public API key. You can copy it below.</p>
+            <p class="text-gray-500 mb-8 max-w-2xl text-sm">If this key stops working, go to the Finnhub website, create a free account to get your own personal key, and paste it into the API key settings (⚙️ icon) on the dashboard.</p>
+            <div class="w-full max-w-md mx-auto">
+                <div class="flex items-center p-2 bg-[#161b22] border border-gray-700 rounded-xl shadow-lg">
+                    <input id="public-api-key-display" type="text" readonly value="d2k39q1r01qj8a5lrp1gd2k39q1r01qj8a5lrp20" class="flex-grow p-2 bg-transparent focus:outline-none text-gray-400 font-mono">
+                    <button id="copy-key-btn" class="p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors text-white font-semibold">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="api-key-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"><div class="bg-gradient-to-br from-[#161b22] to-[#11161d] p-6 rounded-xl shadow-2xl border border-gray-700 space-y-4 w-full max-w-sm transition-all transform scale-95 opacity-0" id="api-key-modal-content"><h3 class="text-lg font-semibold text-white">Enter Your Finnhub API Key</h3><input type="password" id="finnhub-api-key" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your secret API key"><button id="save-api-key" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Save & Close</button></div></div>
+    </main>
+
+    <script type="module">
+        // DOM Elements
+        const mainHeader = document.getElementById('main-header');
+        const landingPage = document.getElementById('landing-page');
+        const launchAppBtn = document.getElementById('launch-app-btn');
+        const stockAppPage = document.getElementById('stock-app-page');
+        const commandsPage = document.getElementById('commands-page');
+        const apiKeyInfoPage = document.getElementById('api-key-info-page');
+        const chatArea = document.getElementById('chat-area');
+        const stockInput = document.getElementById('stock-input');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyModalContent = document.getElementById('api-key-modal-content');
+        const apiKeyButton = document.getElementById('api-key-button');
+        const saveApiKeyButton = document.getElementById('save-api-key');
+        const finnhubApiKeyInput = document.getElementById('finnhub-api-key');
+        const copyKeyBtn = document.getElementById('copy-key-btn');
+        
+        let finnhubApiKey = 'd2k39q1r01qj8a5lrp1gd2k39q1r01qj8a5lrp20';
+        let currentStockData = {};
+
+        // Make functions globally accessible
+        window.showPage = showPage;
+        window.goHome = goHome;
+        window.processInput = processInput;
+
+        // Navigation
+        function showPage(pageId) {
+            landingPage.classList.add('hidden');
+            stockAppPage.classList.add('hidden');
+            commandsPage.classList.add('hidden');
+            apiKeyInfoPage.classList.add('hidden');
+            mainHeader.classList.remove('hidden');
+            document.getElementById(pageId).classList.remove('hidden');
+        }
+        function goHome() {
+            stockAppPage.classList.add('hidden');
+            commandsPage.classList.add('hidden');
+            apiKeyInfoPage.classList.add('hidden');
+            mainHeader.classList.add('hidden');
+            landingPage.classList.remove('hidden');
+        }
+        launchAppBtn.onclick = () => showPage('stock-app-page');
+        
+        // API Key Modal
+        apiKeyButton.onclick = () => {
+            apiKeyModal.classList.remove('hidden');
+            setTimeout(() => {
+                apiKeyModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+        saveApiKeyButton.onclick = () => { finnhubApiKey = finnhubApiKeyInput.value; closeApiKeyModal(); appendChatMessage('API Key saved!', 'bot'); };
+        apiKeyModal.onclick = (e) => { if (e.target === apiKeyModal) closeApiKeyModal(); };
+        
+        function closeApiKeyModal() {
+            apiKeyModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                apiKeyModal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Copy Key Functionality
+        copyKeyBtn.onclick = () => {
+            const keyInput = document.getElementById('public-api-key-display');
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = keyInput.value;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            
+            copyKeyBtn.innerText = 'Copied!';
+            setTimeout(() => { copyKeyBtn.innerText = 'Copy'; }, 2000);
+        };
+
+        stockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); processInput(); } });
+
+        function appendChatMessage(message, type, isHtml = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}-message`;
+            if (isHtml) { messageDiv.innerHTML = message; } else { messageDiv.innerText = message; }
+            chatArea.appendChild(messageDiv);
+            setTimeout(() => {
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateY(0)';
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 50);
+            return messageDiv;
+        }
+
+        function processInput() {
+            const query = stockInput.value.trim();
+            if (!query) return;
+
+            const lowerQuery = query.toLowerCase();
+            if (lowerQuery === 'graph') { handleCommand('graph'); } 
+            else if (lowerQuery.includes('buy') || lowerQuery.includes('sell')) { handleCommand('opinion'); } 
+            else if (lowerQuery === 'fundamentals') { handleCommand('fundamentals'); }
+            else { getStockData(query); }
+            stockInput.value = '';
+        }
+
+        function handleCommand(command) {
+            appendChatMessage(stockInput.value, 'user');
+            if (!currentStockData.ticker) { appendChatMessage('Please search for a stock first.', 'bot'); return; }
+            if (command === 'graph') {
+                const chartId = `chart-${Date.now()}`;
+                const html = `<div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Historical Price Chart</h3><div id="${chartId}" style="height: 400px; width: 100%;"></div><div class="text-center mt-2"><a href="https://www.tradingview.com/symbols/${currentStockData.ticker}/" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 hover:text-indigo-400 transition-colors">View on TradingView</a></div></div>`;
+                appendChatMessage(html, 'bot', true);
+                renderTradingViewChart(currentStockData.ticker, chartId);
+            } else if (command === 'opinion') {
+                const opinion = getBuySellOpinion();
+                appendChatMessage(opinion, 'bot', true);
+            } else if (command === 'fundamentals') {
+                const fundamentals = getFundamentals();
+                appendChatMessage(fundamentals, 'bot', true);
+            }
+        }
+
+        function getFundamentals() {
+            const { metrics, profile } = currentStockData;
+            const metricData = metrics.metric || {};
+            let fundamentalsHtml = `<div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Comprehensive Fundamentals for ${profile.name}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">`;
+
+            const formatKey = (key) => key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+
+            for (const key in metricData) {
+                if (Object.hasOwnProperty.call(metricData, key) && metricData[key] !== null && metricData[key] !== "") {
+                    const value = typeof metricData[key] === 'number' ? metricData[key].toFixed(2) : metricData[key];
+                    fundamentalsHtml += `<div class="flex justify-between border-b border-gray-800 py-2"><span class="text-gray-400">${formatKey(key)}</span><span class="font-semibold text-white">${value}</span></div>`;
+                }
+            }
+
+            fundamentalsHtml += '</div></div>';
+            return fundamentalsHtml;
+        }
+
+        function getBuySellOpinion() {
+            const { metrics } = currentStockData;
+            const metricData = metrics.metric || {};
+            let score = 0;
+            let reasons = [];
+            const beta = metricData.beta;
+            if (beta >= 0.5 && beta <= 1.5) { score++; reasons.push(`A Beta of ${beta.toFixed(2)} is in a healthy range, suggesting moderate volatility.`); } 
+            else if (beta > 1.5) { reasons.push(`A high Beta of ${beta.toFixed(2)} indicates higher than average volatility.`); } 
+            else { reasons.push(`A low Beta of ${beta.toFixed(2)} suggests lower than average volatility.`); }
+            const pe = metricData.peTTM;
+            if (pe >= 15 && pe <= 30) { score++; reasons.push(`The P/E ratio of ${pe.toFixed(2)} is in a reasonable range, suggesting a fair valuation.`); } 
+            else if (pe > 30) { reasons.push(`The P/E ratio of ${pe.toFixed(2)} is high, which may indicate the stock is overvalued.`); } 
+            else if (pe > 0) { reasons.push(`A low P/E ratio of ${pe.toFixed(2)} could suggest the stock is undervalued, or a potential value trap.`); } 
+            else { reasons.push(`The company has negative earnings (no P/E ratio), which is a risk factor.`); }
+            const divYield = metricData.dividendYieldIndicatedAnnual;
+            if (divYield >= 2 && divYield <= 6) { score++; reasons.push(`A solid dividend yield of ${divYield.toFixed(2)}% provides good income for shareholders.`); } 
+            else if (divYield > 6) { score--; reasons.push(`A very high dividend yield of ${divYield.toFixed(2)}% could be a "dividend trap," suggesting the payout may be unsustainable.`); } 
+            else { reasons.push(`The dividend yield of ${divYield ? divYield.toFixed(2) : '0.00'}% is low, indicating the stock is more focused on growth than income.`); }
+            let opinion = 'HOLD'; let badgeClass = 'hold-badge';
+            if (score >= 2) { opinion = 'BUY'; badgeClass = 'buy-badge'; } 
+            else if (score <= 0) { opinion = 'SELL'; badgeClass = 'sell-badge'; }
+            return `<div class="flex items-center space-x-4"><span class="opinion-badge ${badgeClass}">${opinion}</span><h4 class="font-bold text-gray-300">Rule-Based Opinion</h4></div><ul class="mt-2 text-gray-400 list-disc list-inside text-sm space-y-1">${reasons.map(r => `<li>${r}</li>`).join('')}</ul><p class="text-xs text-gray-500 mt-3">This is an automated opinion based on financial metrics and is not financial advice.</p>`;
+        }
+
+        async function getStockData(query) {
+            if (!finnhubApiKey) { appendChatMessage('Please set your Finnhub API key using the ⚙️ icon first.', 'bot'); return; }
+            appendChatMessage(query, 'user');
+            const thinkingMessage = appendChatMessage(`Searching for company: "${query}"...`, 'bot');
+            try {
+                const upperQuery = query.toUpperCase();
+                const searchRes = await fetch(`https://finnhub.io/api/v1/search?q=${upperQuery}&token=${finnhubApiKey}`);
+                const searchData = await searchRes.json();
+                if (!searchData.result || searchData.result.length === 0) { throw new Error(`Could not find a stock symbol for "${query}".`); }
+                const ticker = searchData.result[0].symbol;
+                thinkingMessage.innerText = `Found symbol ${ticker}. Fetching financial data...`;
+                const [quote, profile, metrics] = await Promise.all([
+                    fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${finnhubApiKey}`).then(res => res.json())
+                ]);
+                if (quote.c === 0 && !profile.name) { throw new Error(`Invalid or delisted ticker symbol: ${ticker}`); }
+                currentStockData = { ticker, quote, profile, metrics };
+                thinkingMessage.remove(); 
+                displayDashboard(ticker, quote, profile, metrics);
+            } catch (error) {
+                console.error("Finnhub API Error:", error);
+                thinkingMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        function displayDashboard(ticker, quote, profile, metrics) {
+            const metricData = metrics.metric || {};
+            const change = quote.d >= 0 ? `+${quote.d.toFixed(2)}` : quote.d.toFixed(2);
+            const changePercent = quote.dp >= 0 ? `+${quote.dp.toFixed(2)}%` : `${quote.dp.toFixed(2)}%`;
+            const changeColor = quote.d >= 0 ? 'text-green-500' : 'text-red-500';
+            const formatLargeNumber = (num) => {
+                if (!num) return 'N/A';
+                if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+                if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+                if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+                return num;
+            };
+
+            const chartId = `chart-${Date.now()}`;
+
+            const dashboardHtml = `
+                <div class="w-full space-y-4">
+                    <div class="dashboard-card"><div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold text-white">${profile.name || ticker} (${profile.ticker})</h2><p class="text-gray-400">${profile.exchange || 'N/A'}</p></div><img src="${profile.logo}" alt="Logo" class="w-16 h-16 rounded-full" onerror="this.style.display='none'"></div></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="dashboard-card text-center"><p class="metric-label">Current Price</p><p class="metric-value">$${quote.c.toFixed(2)}</p><p class="${changeColor}">${change} (${changePercent})</p></div><div class="dashboard-card text-center"><p class="metric-label">Beta</p><p class="metric-value">${metricData.beta ? metricData.beta.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">P/E Ratio (TTM)</p><p class="metric-value">${metricData.peTTM ? metricData.peTTM.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">Dividend Yield</p><p class="metric-value">${metricData.dividendYieldIndicatedAnnual ? (metricData.dividendYieldIndicatedAnnual).toFixed(2) : '0.00'}%</p></div></div>
+                    <div class="dashboard-card"><h3 class="font-bold mb-4 text-gray-300">Key Fundamentals</h3><div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">${[{label: 'Market Cap', value: formatLargeNumber(profile.marketCapitalization * 1e6)}, {label: '52-Week High', value: `$${metricData['52WeekHigh']}`}, {label: '52-Week Low', value: `$${metricData['52WeekLow']}`}, {label: 'EPS (TTM)', value: `$${metricData.epsTTM}`}, {label: 'Revenue/Share', value: `$${metricData.revenuePerShareTTM}`}, {label: 'Book Value/Share', value: `$${metricData.bookValuePerShareQuarterly}`}].map(item => `<div class="bg-gray-900 p-3 rounded-lg"><p class="text-sm text-gray-400">${item.label}</p><p class="font-bold text-lg text-white">${item.value || 'N/A'}</p></div>`).join('')}</div></div>
+                    <div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Historical Price Chart</h3><div id="${chartId}" style="height: 400px; width: 100%;"></div><div class="text-center mt-2"><a href="https://www.tradingview.com/symbols/${ticker}/" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 hover:text-indigo-400 transition-colors">View on TradingView</a></div></div>
+                </div>`;
+            appendChatMessage(dashboardHtml, 'bot', true);
+            renderTradingViewChart(ticker, chartId);
+        }
+
+        function renderTradingViewChart(ticker, containerId) {
+            setTimeout(() => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+                new TradingView.widget({
+                    "width": "100%",
+                    "height": "100%",
+                    "symbol": ticker,
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#f1f3f6",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "container_id": containerId
+                });
+            }, 100);
+        }
+    </script>
+</body>
+</html>
