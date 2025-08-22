@@ -89,6 +89,7 @@
         <nav class="flex items-center space-x-4">
             <button onclick="showPage('stock-app-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">Dashboard</button>
             <button onclick="showPage('commands-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">Commands</button>
+            <button onclick="showPage('api-key-info-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">API Key</button>
         </nav>
     </header>
 
@@ -98,14 +99,16 @@
              <div class="text-6xl mb-4 animate-pulse">📊</div>
             <h1 class="text-4xl md:text-5xl font-bold text-white">Welcome to Stock Data AI</h1>
             <p class="text-lg text-gray-400 mt-4 max-w-2xl">Your intelligent dashboard for real-time stock analysis. Enter a company name to get financial data, charts, and rule-based opinions.</p>
+            <p class="text-md text-gray-500 mt-2">(Supports US stocks only)</p>
             <button id="launch-app-btn" class="mt-8 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">Launch Dashboard</button>
+            <p class="absolute bottom-4 text-gray-600 text-sm">Made by Gurtej</p>
         </div>
 
         <!-- =========== Stock App Page =========== -->
         <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-4 pt-24">
             <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
                 <div id="chat-area" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
-                    <div class="bot-message">Hello! Please set your Finnhub API key using the ⚙️ icon, then enter a stock ticker or company name. See the "Commands" page for more actions.</div>
+                    <div class="bot-message">Hello! Enter a stock ticker or company name to begin. See the "Commands" page for more actions.</div>
                 </div>
                 <div class="pt-4 sticky bottom-4">
                     <div class="flex items-center space-x-2 p-2 bg-[#161b22] border border-gray-700 rounded-xl shadow-lg">
@@ -127,8 +130,21 @@
                 <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">View Fundamentals</h2><p class="text-gray-400">After a search, type `fundamentals` to see a detailed list of all available financial metrics.</p><p class="mt-4 text-sm text-gray-500">e.g., `fundamentals`</p></div>
             </div>
         </div>
+        
+        <!-- =========== API Key Info Page =========== -->
+        <div id="api-key-info-page" class="hidden min-h-screen flex flex-col items-center justify-center p-4 pt-24 text-center">
+            <h1 class="text-4xl font-bold text-white mb-4">Default Finnhub API Key</h1>
+            <p class="text-gray-400 mb-4 max-w-2xl">This app is pre-configured with a public API key. You can copy it below.</p>
+            <p class="text-gray-500 mb-8 max-w-2xl text-sm">If this key stops working, go to the Finnhub website, create a free account to get your own personal key, and paste it into the API key settings (⚙️ icon) on the dashboard.</p>
+            <div class="w-full max-w-md mx-auto">
+                <div class="flex items-center p-2 bg-[#161b22] border border-gray-700 rounded-xl shadow-lg">
+                    <input id="public-api-key-display" type="text" readonly value="d2k39q1r01qj8a5lrp1gd2k39q1r01qj8a5lrp20" class="flex-grow p-2 bg-transparent focus:outline-none text-gray-400 font-mono">
+                    <button id="copy-key-btn" class="p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors text-white font-semibold">Copy</button>
+                </div>
+            </div>
+        </div>
 
-        <div id="api-key-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50"><div class="bg-[#161b22] p-6 rounded-lg shadow-xl border border-gray-700 space-y-4 w-full max-w-sm"><h3 class="text-lg font-semibold text-white">Finnhub API Key</h3><input type="password" id="finnhub-api-key" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your secret API key"><button id="save-api-key" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Save</button></div></div>
+        <div id="api-key-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"><div class="bg-gradient-to-br from-[#161b22] to-[#11161d] p-6 rounded-xl shadow-2xl border border-gray-700 space-y-4 w-full max-w-sm transition-all transform scale-95 opacity-0" id="api-key-modal-content"><h3 class="text-lg font-semibold text-white">Enter Your Finnhub API Key</h3><input type="password" id="finnhub-api-key" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your secret API key"><button id="save-api-key" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Save & Close</button></div></div>
     </main>
 
     <script type="module">
@@ -138,14 +154,17 @@
         const launchAppBtn = document.getElementById('launch-app-btn');
         const stockAppPage = document.getElementById('stock-app-page');
         const commandsPage = document.getElementById('commands-page');
+        const apiKeyInfoPage = document.getElementById('api-key-info-page');
         const chatArea = document.getElementById('chat-area');
         const stockInput = document.getElementById('stock-input');
         const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyModalContent = document.getElementById('api-key-modal-content');
         const apiKeyButton = document.getElementById('api-key-button');
         const saveApiKeyButton = document.getElementById('save-api-key');
         const finnhubApiKeyInput = document.getElementById('finnhub-api-key');
+        const copyKeyBtn = document.getElementById('copy-key-btn');
         
-        let finnhubApiKey = '';
+        let finnhubApiKey = 'd2k39q1r01qj8a5lrp1gd2k39q1r01qj8a5lrp20';
         let currentStockData = {};
 
         // Make functions globally accessible
@@ -158,21 +177,49 @@
             landingPage.classList.add('hidden');
             stockAppPage.classList.add('hidden');
             commandsPage.classList.add('hidden');
+            apiKeyInfoPage.classList.add('hidden');
             mainHeader.classList.remove('hidden');
             document.getElementById(pageId).classList.remove('hidden');
         }
         function goHome() {
             stockAppPage.classList.add('hidden');
             commandsPage.classList.add('hidden');
+            apiKeyInfoPage.classList.add('hidden');
             mainHeader.classList.add('hidden');
             landingPage.classList.remove('hidden');
         }
         launchAppBtn.onclick = () => showPage('stock-app-page');
         
         // API Key Modal
-        apiKeyButton.onclick = () => apiKeyModal.classList.remove('hidden');
-        saveApiKeyButton.onclick = () => { finnhubApiKey = finnhubApiKeyInput.value; apiKeyModal.classList.add('hidden'); appendChatMessage('API Key saved!', 'bot'); };
-        apiKeyModal.onclick = (e) => { if (e.target === apiKeyModal) apiKeyModal.classList.add('hidden'); };
+        apiKeyButton.onclick = () => {
+            apiKeyModal.classList.remove('hidden');
+            setTimeout(() => {
+                apiKeyModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+        saveApiKeyButton.onclick = () => { finnhubApiKey = finnhubApiKeyInput.value; closeApiKeyModal(); appendChatMessage('API Key saved!', 'bot'); };
+        apiKeyModal.onclick = (e) => { if (e.target === apiKeyModal) closeApiKeyModal(); };
+        
+        function closeApiKeyModal() {
+            apiKeyModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                apiKeyModal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Copy Key Functionality
+        copyKeyBtn.onclick = () => {
+            const keyInput = document.getElementById('public-api-key-display');
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = keyInput.value;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            
+            copyKeyBtn.innerText = 'Copied!';
+            setTimeout(() => { copyKeyBtn.innerText = 'Copy'; }, 2000);
+        };
 
         stockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); processInput(); } });
 
