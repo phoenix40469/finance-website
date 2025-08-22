@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📈 Interactive Stock Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f9ff; /* sky-50 */ }
+        
+        .chat-message {
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.25rem;
+            margin-bottom: 0.75rem;
+            max-width: 85%;
+            word-wrap: break-word;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .user-message {
+            background: linear-gradient(to right, #2563eb, #3b82f6); /* blue-600 to blue-500 */
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .bot-message {
+            background-color: #FFFFFF;
+            color: #374151; /* gray-700 */
+            align-self: flex-start;
+            border: 1px solid #E5E7EB; /* gray-200 */
+            border-bottom-left-radius: 0.25rem;
+        }
+        .dashboard-card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB; /* gray-200 */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .metric-value {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            color: #16a34a; /* green-600 */
+        }
+        .metric-label {
+            font-size: 0.875rem; /* text-sm */
+            color: #6B7280; /* gray-500 */
+        }
+        .opinion-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        .buy-badge { background-color: #D1FAE5; color: #065F46; }
+        .sell-badge { background-color: #FEE2E2; color: #991B1B; }
+        .hold-badge { background-color: #FEF3C7; color: #92400E; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- =========== Header Bar =========== -->
+    <header id="main-header" class="hidden fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-b border-gray-200 p-4 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800">Stock Data AI</h1>
+        </div>
+        <button id="home-button" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </button>
+    </header>
+
+    <main id="app-container">
+        <!-- =========== Landing Page =========== -->
+        <div id="landing-page" class="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+             <div class="text-6xl mb-4">📊</div>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">Welcome to Stock Data AI</h1>
+            <p class="text-lg text-gray-600 mt-4 max-w-2xl">An interactive dashboard for stock analysis. Enter a company name to get financial data, charts, and rule-based opinions.</p>
+            <button id="launch-app-btn" class="mt-8 bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Launch Dashboard</button>
+        </div>
+
+        <!-- =========== Stock App Page =========== -->
+        <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-4 pt-24">
+            <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
+                <div id="chat-area" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
+                    <div class="bot-message">Hello! Please set your Finnhub API key using the ⚙️ icon, then enter a stock ticker or company name to begin. You can also type "graph" or "buy or sell" for an active stock.</div>
+                </div>
+                <div class="pt-4 sticky bottom-4">
+                    <div class="flex items-center space-x-2 p-2 bg-white border border-gray-200 rounded-xl shadow-lg">
+                        <input id="stock-input" class="flex-grow p-2 bg-transparent focus:outline-none resize-none text-gray-800" placeholder="Enter a company, ticker, or command...">
+                        <button onclick="processInput()" class="p-2 bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                        <button id="api-key-button" class="p-2 rounded-full hover:bg-gray-100 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="api-key-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg shadow-xl space-y-4 w-full max-w-sm"><h3 class="text-lg font-semibold text-gray-800">Finnhub API Key</h3><input type="password" id="finnhub-api-key" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400" placeholder="Enter your secret API key"><button id="save-api-key" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">Save</button></div></div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const mainHeader = document.getElementById('main-header');
+        const homeButton = document.getElementById('home-button');
+        const landingPage = document.getElementById('landing-page');
+        const launchAppBtn = document.getElementById('launch-app-btn');
+        const stockAppPage = document.getElementById('stock-app-page');
+        const chatArea = document.getElementById('chat-area');
+        const stockInput = document.getElementById('stock-input');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyButton = document.getElementById('api-key-button');
+        const saveApiKeyButton = document.getElementById('save-api-key');
+        const finnhubApiKeyInput = document.getElementById('finnhub-api-key');
+        
+        let finnhubApiKey = '';
+        let stockChart = null;
+        let currentStockData = {};
+
+        // Navigation
+        function showApp() { landingPage.classList.add('hidden'); stockAppPage.classList.remove('hidden'); mainHeader.classList.remove('hidden'); }
+        function goHome() { stockAppPage.classList.add('hidden'); mainHeader.classList.add('hidden'); landingPage.classList.remove('hidden'); }
+        launchAppBtn.onclick = showApp;
+        homeButton.onclick = goHome;
+
+        // API Key Modal
+        apiKeyButton.onclick = () => apiKeyModal.classList.remove('hidden');
+        saveApiKeyButton.onclick = () => { finnhubApiKey = finnhubApiKeyInput.value; apiKeyModal.classList.add('hidden'); appendChatMessage('API Key saved!', 'bot'); };
+        apiKeyModal.onclick = (e) => { if (e.target === apiKeyModal) apiKeyModal.classList.add('hidden'); };
+
+        stockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); processInput(); } });
+
+        function appendChatMessage(message, type, isHtml = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}-message`;
+            if (isHtml) { messageDiv.innerHTML = message; } else { messageDiv.innerText = message; }
+            chatArea.appendChild(messageDiv);
+            setTimeout(() => {
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateY(0)';
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 50);
+            return messageDiv;
+        }
+
+        function processInput() {
+            const query = stockInput.value.trim().toLowerCase();
+            if (!query) return;
+
+            if (query === 'graph') {
+                handleCommand('graph');
+            } else if (query.includes('buy') || query.includes('sell')) {
+                handleCommand('opinion');
+            } else {
+                getStockData(query);
+            }
+            stockInput.value = '';
+        }
+
+        function handleCommand(command) {
+            appendChatMessage(stockInput.value, 'user');
+            if (!currentStockData.ticker) {
+                appendChatMessage('Please search for a stock first.', 'bot');
+                return;
+            }
+
+            if (command === 'graph') {
+                const hasChartData = currentStockData.candle.s === 'ok' && currentStockData.candle.c.length > 0;
+                const html = `<div class="dashboard-card">${hasChartData ? '<canvas id="stockChart-command"></canvas>' : '<p>No chart data available.</p>'}</div>`;
+                appendChatMessage(html, 'bot', true);
+                if (hasChartData) {
+                    renderChart(currentStockData.candle, 'stockChart-command');
+                }
+            } else if (command === 'opinion') {
+                const opinion = getBuySellOpinion();
+                appendChatMessage(opinion, 'bot', true);
+            }
+        }
+
+        function getBuySellOpinion() {
+            const { metrics } = currentStockData;
+            const metricData = metrics.metric || {};
+            let score = 0;
+            let reasons = [];
+
+            // Beta Analysis
+            const beta = metricData.beta;
+            if (beta >= 0.5 && beta <= 1.5) {
+                score++;
+                reasons.push(`A Beta of ${beta.toFixed(2)} is in a healthy range, suggesting moderate volatility.`);
+            } else if (beta > 1.5) {
+                reasons.push(`A high Beta of ${beta.toFixed(2)} indicates higher than average volatility.`);
+            } else {
+                reasons.push(`A low Beta of ${beta.toFixed(2)} suggests lower than average volatility.`);
+            }
+
+            // P/E Ratio Analysis
+            const pe = metricData.peTTM;
+            if (pe >= 15 && pe <= 30) {
+                score++;
+                reasons.push(`The P/E ratio of ${pe.toFixed(2)} is in a reasonable range, suggesting a fair valuation.`);
+            } else if (pe > 30) {
+                reasons.push(`The P/E ratio of ${pe.toFixed(2)} is high, which may indicate the stock is overvalued.`);
+            } else if (pe > 0) {
+                reasons.push(`A low P/E ratio of ${pe.toFixed(2)} could suggest the stock is undervalued, or a potential value trap.`);
+            } else {
+                 reasons.push(`The company has negative earnings (no P/E ratio), which is a risk factor.`);
+            }
+
+            // Dividend Yield Analysis
+            const divYield = metricData.dividendYieldIndicatedAnnual;
+            if (divYield >= 2 && divYield <= 6) {
+                score++;
+                reasons.push(`A solid dividend yield of ${divYield.toFixed(2)}% provides good income for shareholders.`);
+            } else if (divYield > 6) {
+                score--;
+                reasons.push(`A very high dividend yield of ${divYield.toFixed(2)}% could be a "dividend trap," suggesting the payout may be unsustainable.`);
+            } else {
+                 reasons.push(`The dividend yield of ${divYield ? divYield.toFixed(2) : '0.00'}% is low, indicating the stock is more focused on growth than income.`);
+            }
+
+            let opinion = 'HOLD';
+            let badgeClass = 'hold-badge';
+            if (score >= 2) {
+                opinion = 'BUY';
+                badgeClass = 'buy-badge';
+            } else if (score <= 0) {
+                opinion = 'SELL';
+                badgeClass = 'sell-badge';
+            }
+            
+            return `
+                <div class="flex items-center space-x-4">
+                    <span class="opinion-badge ${badgeClass}">${opinion}</span>
+                    <h4 class="font-bold text-gray-800">Rule-Based Opinion</h4>
+                </div>
+                <ul class="mt-2 text-gray-600 list-disc list-inside text-sm space-y-1">${reasons.map(r => `<li>${r}</li>`).join('')}</ul>
+                <p class="text-xs text-gray-400 mt-3">This is an automated opinion based on financial metrics and is not financial advice.</p>
+            `;
+        }
+
+        async function getStockData(query) {
+            if (!finnhubApiKey) { appendChatMessage('Please set your Finnhub API key using the ⚙️ icon first.', 'bot'); return; }
+            appendChatMessage(query, 'user');
+            const thinkingMessage = appendChatMessage(`Searching for company: "${query}"...`, 'bot');
+
+            try {
+                const searchRes = await fetch(`https://finnhub.io/api/v1/search?q=${query}&token=${finnhubApiKey}`);
+                const searchData = await searchRes.json();
+                if (searchData.count === 0 || !searchData.result[0]) { throw new Error(`Could not find a stock symbol for "${query}".`); }
+
+                const ticker = searchData.result[0].symbol;
+                thinkingMessage.innerText = `Found symbol ${ticker}. Fetching financial data...`;
+
+                const [quote, profile, metrics, candle] = await Promise.all([
+                    fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetchHistoricalData(ticker)
+                ]);
+
+                if (quote.c === 0 && !profile.name) { throw new Error(`Invalid or delisted ticker symbol: ${ticker}`); }
+                
+                currentStockData = { ticker, quote, profile, metrics, candle };
+                thinkingMessage.remove(); 
+                displayDashboard(ticker, quote, profile, metrics, candle);
+            } catch (error) {
+                thinkingMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function fetchHistoricalData(ticker) {
+            const oneYearAgo = Math.floor(Date.now() / 1000) - 31536000;
+            const now = Math.floor(Date.now() / 1000);
+            return fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${ticker}&resolution=D&from=${oneYearAgo}&to=${now}&token=${finnhubApiKey}`).then(res => res.json());
+        }
+
+        function displayDashboard(ticker, quote, profile, metrics, candle) {
+            const metricData = metrics.metric || {};
+            const change = quote.d >= 0 ? `+${quote.d.toFixed(2)}` : quote.d.toFixed(2);
+            const changePercent = quote.dp >= 0 ? `+${quote.dp.toFixed(2)}%` : `${quote.dp.toFixed(2)}%`;
+            const changeColor = quote.d >= 0 ? 'text-green-500' : 'text-red-500';
+            const hasChartData = candle.s === 'ok' && candle.c.length > 0;
+
+            const dashboardHtml = `
+                <div class="w-full space-y-4">
+                    <div class="dashboard-card"><div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold">${profile.name || ticker} (${profile.ticker})</h2><p class="text-gray-500">${profile.exchange || 'N/A'}</p></div><img src="${profile.logo}" alt="Logo" class="w-16 h-16 rounded-full" onerror="this.style.display='none'"></div></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="dashboard-card text-center"><p class="metric-label">Current Price</p><p class="metric-value">$${quote.c.toFixed(2)}</p><p class="${changeColor}">${change} (${changePercent})</p></div><div class="dashboard-card text-center"><p class="metric-label">Beta</p><p class="metric-value">${metricData.beta ? metricData.beta.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">P/E Ratio (TTM)</p><p class="metric-value">${metricData.peTTM ? metricData.peTTM.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">Dividend Yield</p><p class="metric-value">${metricData.dividendYieldIndicatedAnnual ? (metricData.dividendYieldIndicatedAnnual).toFixed(2) : '0.00'}%</p></div></div>
+                    <div class="dashboard-card">${hasChartData ? '<canvas id="stockChart-main"></canvas>' : '<p class="text-gray-500 text-center py-8">Historical price data is not available.</p>'}</div>
+                </div>`;
+            appendChatMessage(dashboardHtml, 'bot', true);
+            if (hasChartData) { renderChart(candle, 'stockChart-main'); }
+        }
+
+        function renderChart(candle, canvasId) {
+            setTimeout(() => {
+                const ctx = document.getElementById(canvasId)?.getContext('2d');
+                if (!ctx) return; 
+                if (stockChart && stockChart.canvas.id === canvasId) stockChart.destroy();
+                
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: candle.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
+                        datasets: [{ label: 'Closing Price', data: candle.c, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 8, autoSkip: true } }, y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
+                });
+
+                if (canvasId === 'stockChart-main') {
+                    stockChart = chart;
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
