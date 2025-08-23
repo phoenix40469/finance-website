@@ -157,8 +157,7 @@
         <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-4 pt-24">
             <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
                 <div id="chat-area" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
-                    <div class="bot-message">Hello! Enter a stock ticker or company name to begin. See the "Commands" page for more actions.</div>
-                    <!-- This empty div acts as an anchor to scroll to -->
+                    <!-- Initial message is now added dynamically via JavaScript -->
                     <div id="chat-scroll-anchor"></div>
                 </div>
                 <div class="pt-4 sticky bottom-4">
@@ -239,7 +238,15 @@
             mainHeader.classList.add('hidden');
             landingPage.classList.remove('hidden');
         }
-        launchAppBtn.onclick = () => showPage('stock-app-page');
+        
+        launchAppBtn.onclick = () => {
+            showPage('stock-app-page');
+            // Add the welcome message dynamically only if it hasn't been added before
+            if (!chatArea.querySelector('.welcome-message')) {
+                const welcomeMsg = appendChatMessage('Hello! Enter a stock ticker or company name to begin. See the "Commands" page for more actions.', 'bot');
+                welcomeMsg.classList.add('welcome-message'); // Add a class to prevent re-adding it
+            }
+        };
         
         // API Key Modal
         apiKeyButton.onclick = () => {
