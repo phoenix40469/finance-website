@@ -27,7 +27,7 @@
             height: 200%;
             top: -50%;
             left: -50%;
-            z-index: -1; /* Ensure it's behind other content */
+            z-index: -1;
             background: repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0px, rgba(255,255,255,0.2) 1px, transparent 1px, transparent 40px),
                         radial-gradient(circle at 20% 80%, #ff6f61 0%, transparent 40%),
                         radial-gradient(circle at 80% 20%, #42f5b0 0%, transparent 40%),
@@ -40,40 +40,65 @@
         }
 
         @keyframes moveFluid {
-            0% {
-                transform: translate(0, 0) scale(1);
-            }
-            50% {
-                transform: translate(-10%, -10%) scale(1.3);
-            }
-            100% {
-                transform: translate(10%, 10%) scale(1);
-            }
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-10%, -10%) scale(1.3); }
+            100% { transform: translate(10%, 10%) scale(1); }
         }
         
+        @keyframes fluid-slide-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .chat-message {
             padding: 0.75rem 1.25rem;
             border-radius: 1.25rem;
             margin-bottom: 0.75rem;
             max-width: 85%;
             word-wrap: break-word;
-            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
             opacity: 0;
-            transform: translateY(20px);
+            animation: fluid-slide-in 0.4s cubic-bezier(0.215, 0.610, 0.355, 1) forwards;
         }
         .user-message {
-            background: linear-gradient(to right, #312e81, #4f46e5); /* Darker indigo gradient */
+            background: linear-gradient(to right, #312e81, #4f46e5);
             color: white;
             align-self: flex-end;
             border-bottom-right-radius: 0.25rem;
+            transform-origin: bottom right;
         }
         .bot-message {
-            background-color: rgba(22, 27, 34, 0.8); /* Semi-transparent dark background */
+            background-color: rgba(22, 27, 34, 0.8);
             backdrop-filter: blur(8px);
             align-self: flex-start;
             border: 1px solid rgba(48, 54, 61, 0.5);
             border-bottom-left-radius: 0.25rem;
+            transform-origin: bottom left;
         }
+        
+        /* Thinking Animation Styles */
+        .thinking-dots span {
+            animation: blink 1.4s infinite both;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #8b949e;
+            border-radius: 50%;
+            margin: 0 2px;
+        }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+
         .dashboard-card {
             background: rgba(22, 27, 34, 0.8);
             backdrop-filter: blur(8px);
@@ -88,41 +113,15 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
             border-color: #4f46e5;
         }
-        .metric-value {
-            font-size: 1.875rem; /* text-3xl */
-            font-weight: 700;
-            color: #22c55e; /* green-500 */
-        }
-        .metric-label {
-            font-size: 0.875rem; /* text-sm */
-            color: #8b949e; /* gray-400 */
-        }
-        .opinion-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-        }
+        .metric-value { font-size: 1.875rem; font-weight: 700; color: #22c55e; }
+        .metric-label { font-size: 0.875rem; color: #8b949e; }
+        .opinion-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
         .buy-badge { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
         .sell-badge { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
         .hold-badge { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        .command-suggestion {
-            background-color: rgba(79, 70, 229, 0.1);
-            border: 1px solid #4f46e5;
-            color: #a5b4fc;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .command-suggestion:hover {
-            background-color: rgba(79, 70, 229, 0.2);
-            color: white;
-        }
-        h1 {
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-        }
+        .command-suggestion { background-color: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; color: #a5b4fc; padding: 0.5rem 1rem; border-radius: 9999px; cursor: pointer; transition: all 0.2s ease; }
+        .command-suggestion:hover { background-color: rgba(79, 70, 229, 0.2); color: white; }
+        h1 { text-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="text-gray-300">
@@ -135,10 +134,10 @@
             <div class="text-2xl">📈</div>
             <h1 class="text-xl font-bold text-white">Stock Data AI</h1>
         </div>
-        <nav class="flex items-center space-x-4">
-            <button onclick="showPage('stock-app-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">📈 Dashboard</button>
-            <button onclick="showPage('commands-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">💡 Commands</button>
-            <button onclick="showPage('api-key-info-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">🔑 API Key</button>
+        <nav class="flex items-center space-x-2 sm:space-x-4">
+            <button onclick="showPage('stock-app-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">📈<span class="hidden sm:inline ml-2">Dashboard</span></button>
+            <button onclick="showPage('commands-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">💡<span class="hidden sm:inline ml-2">Commands</span></button>
+            <button onclick="showPage('api-key-info-page')" class="text-gray-400 hover:text-white font-semibold transition-colors">🔑<span class="hidden sm:inline ml-2">API Key</span></button>
         </nav>
     </header>
 
@@ -154,10 +153,9 @@
         </div>
 
         <!-- =========== Stock App Page =========== -->
-        <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-4 pt-24">
+        <div id="stock-app-page" class="hidden min-h-screen flex flex-col p-2 sm:p-4 pt-20 sm:pt-24">
             <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
                 <div id="chat-area" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
-                    <!-- Initial message is now added dynamically via JavaScript -->
                     <div id="chat-scroll-anchor"></div>
                 </div>
                 <div class="pt-4 sticky bottom-4">
@@ -170,8 +168,8 @@
             </div>
         </div>
 
-        <!-- =========== Commands Page =========== -->
-        <div id="commands-page" class="hidden min-h-screen flex flex-col items-center justify-center p-4 pt-24 text-center">
+        <!-- Other Pages (Commands, API Key) -->
+        <div id="commands-page" class="hidden min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 pt-20 sm:pt-24 text-center">
             <h1 class="text-4xl font-bold text-white mb-8">Available Commands</h1>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
                 <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">Search for a Stock</h2><p class="text-gray-400">Enter any US company name or stock ticker to get its latest financial data.</p><p class="mt-4 text-sm text-gray-500">e.g., `Microsoft`, `TSLA`</p></div>
@@ -180,9 +178,7 @@
                 <div class="dashboard-card"><h2 class="text-xl font-bold text-indigo-400 mb-2">View Fundamentals</h2><p class="text-gray-400">After a search, type `fundamentals` to see a detailed list of all available financial metrics.</p><p class="mt-4 text-sm text-gray-500">e.g., `fundamentals`</p></div>
             </div>
         </div>
-        
-        <!-- =========== API Key Info Page =========== -->
-        <div id="api-key-info-page" class="hidden min-h-screen flex flex-col items-center justify-center p-4 pt-24 text-center">
+        <div id="api-key-info-page" class="hidden min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 pt-20 sm:pt-24 text-center">
             <h1 class="text-4xl font-bold text-white mb-4">Default Finnhub API Key</h1>
             <p class="text-gray-400 mb-4 max-w-2xl">This app is pre-configured with a public API key. You can copy it below.</p>
             <p class="text-gray-500 mb-8 max-w-2xl text-sm">If this key stops working, go to the Finnhub website, create a free account to get your own personal key, and paste it into the API key settings (⚙️ icon) on the dashboard.</p>
@@ -193,7 +189,6 @@
                 </div>
             </div>
         </div>
-
         <div id="api-key-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"><div class="bg-gradient-to-br from-[#161b22] to-[#11161d] p-6 rounded-xl shadow-2xl border border-gray-700 space-y-4 w-full max-w-sm transition-all transform scale-95 opacity-0" id="api-key-modal-content"><h3 class="text-lg font-semibold text-white">Enter Your Finnhub API Key</h3><input type="password" id="finnhub-api-key" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your secret API key"><button id="save-api-key" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Save & Close</button></div></div>
     </main>
 
@@ -241,28 +236,22 @@
         
         launchAppBtn.onclick = () => {
             showPage('stock-app-page');
-            // Add the welcome message dynamically only if it hasn't been added before
             if (!chatArea.querySelector('.welcome-message')) {
                 const welcomeMsg = appendChatMessage('Hello! Enter a stock ticker or company name to begin. See the "Commands" page for more actions.', 'bot');
-                welcomeMsg.classList.add('welcome-message'); // Add a class to prevent re-adding it
+                welcomeMsg.classList.add('welcome-message');
             }
         };
         
         // API Key Modal
         apiKeyButton.onclick = () => {
             apiKeyModal.classList.remove('hidden');
-            setTimeout(() => {
-                apiKeyModalContent.classList.remove('scale-95', 'opacity-0');
-            }, 10);
+            setTimeout(() => { apiKeyModalContent.classList.remove('scale-95', 'opacity-0'); }, 10);
         };
         saveApiKeyButton.onclick = () => { finnhubApiKey = finnhubApiKeyInput.value; closeApiKeyModal(); appendChatMessage('API Key saved!', 'bot'); };
         apiKeyModal.onclick = (e) => { if (e.target === apiKeyModal) closeApiKeyModal(); };
-        
         function closeApiKeyModal() {
             apiKeyModalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                apiKeyModal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => { apiKeyModal.classList.add('hidden'); }, 200);
         }
 
         // Copy Key Functionality
@@ -274,7 +263,6 @@
             tempTextArea.select();
             document.execCommand('copy');
             document.body.removeChild(tempTextArea);
-            
             copyKeyBtn.innerText = 'Copied!';
             setTimeout(() => { copyKeyBtn.innerText = 'Copy'; }, 2000);
         };
@@ -283,65 +271,88 @@
 
         function appendChatMessage(message, type, isHtml = false) {
             const messageDiv = document.createElement('div');
-            const scrollAnchor = document.getElementById('chat-scroll-anchor'); // Get the anchor
+            const scrollAnchor = document.getElementById('chat-scroll-anchor');
             messageDiv.className = `chat-message ${type}-message`;
             if (isHtml) { messageDiv.innerHTML = message; } else { messageDiv.innerText = message; }
-            
-            // Insert the new message BEFORE the anchor element
             chatArea.insertBefore(messageDiv, scrollAnchor);
-            
-            setTimeout(() => {
-                messageDiv.style.opacity = '1';
-                messageDiv.style.transform = 'translateY(0)';
-                // Tell the anchor to scroll into view, ensuring the latest message is visible
-                scrollAnchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }, 150);
+            setTimeout(() => { scrollAnchor.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 100);
             return messageDiv;
+        }
+
+        function appendThinkingMessage() {
+            const thinkingHtml = '<div class="thinking-dots"><span></span><span></span><span></span></div>';
+            return appendChatMessage(thinkingHtml, 'bot', true);
         }
 
         function processInput() {
             const query = stockInput.value.trim();
             if (!query) return;
-
+            appendChatMessage(query, 'user');
             const lowerQuery = query.toLowerCase();
-            if (lowerQuery === 'graph') { handleCommand('graph'); } 
-            else if (lowerQuery.includes('buy') || lowerQuery.includes('sell')) { handleCommand('opinion'); } 
-            else if (lowerQuery === 'fundamentals') { handleCommand('fundamentals'); }
-            else { getStockData(query); }
+            if (lowerQuery === 'graph' || lowerQuery.includes('buy') || lowerQuery.includes('sell') || lowerQuery === 'fundamentals') {
+                handleCommand(lowerQuery);
+            } else {
+                getStockData(query);
+            }
             stockInput.value = '';
         }
 
         function handleCommand(command) {
-            appendChatMessage(stockInput.value, 'user');
             if (!currentStockData.ticker) { appendChatMessage('Please search for a stock first.', 'bot'); return; }
-            if (command === 'graph') {
-                const chartId = `chart-${Date.now()}`;
-                const html = `<div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Historical Price Chart</h3><div id="${chartId}" style="height: 800px; width: 100%;"></div><div class="text-center mt-2"><a href="https://www.tradingview.com/symbols/${currentStockData.ticker}/" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 hover:text-indigo-400 transition-colors">View on TradingView</a></div></div>`;
-                appendChatMessage(html, 'bot', true);
-                renderTradingViewChart(currentStockData.ticker, chartId);
-            } else if (command === 'opinion') {
-                const opinion = getBuySellOpinion();
-                appendChatMessage(opinion, 'bot', true);
-            } else if (command === 'fundamentals') {
-                const fundamentals = getFundamentals();
-                appendChatMessage(fundamentals, 'bot', true);
-            }
+            const thinkingMessage = appendThinkingMessage();
+            setTimeout(() => {
+                thinkingMessage.remove();
+                if (command === 'graph') {
+                    const chartId = `chart-${Date.now()}`;
+                    const html = `<div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Historical Price Chart</h3><div id="${chartId}" style="height: 800px; width: 100%;"></div><div class="text-center mt-2"><a href="https://www.tradingview.com/symbols/${currentStockData.ticker}/" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 hover:text-indigo-400 transition-colors">View on TradingView</a></div></div>`;
+                    appendChatMessage(html, 'bot', true);
+                    renderTradingViewChart(currentStockData.ticker, chartId);
+                } else if (command.includes('buy') || command.includes('sell')) {
+                    appendChatMessage(getBuySellOpinion(), 'bot', true);
+                } else if (command === 'fundamentals') {
+                    appendChatMessage(getFundamentals(), 'bot', true);
+                }
+            }, 1500); // Simulate thinking for 1.5 seconds
         }
 
+        async function getStockData(query) {
+            if (!finnhubApiKey) { appendChatMessage('Please set your Finnhub API key using the ⚙️ icon first.', 'bot'); return; }
+            const thinkingMessage = appendThinkingMessage();
+            try {
+                const upperQuery = query.toUpperCase();
+                const searchRes = await fetch(`https://finnhub.io/api/v1/search?q=${upperQuery}&token=${finnhubApiKey}`);
+                const searchData = await searchRes.json();
+                if (!searchData.result || searchData.result.length === 0) { throw new Error(`Could not find a stock symbol for "${query}".`); }
+                const ticker = searchData.result[0].symbol;
+                
+                const [quote, profile, metrics] = await Promise.all([
+                    fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
+                    fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${finnhubApiKey}`).then(res => res.json())
+                ]);
+
+                thinkingMessage.remove(); 
+                if (quote.c === 0 && !profile.name) { throw new Error(`Invalid or delisted ticker symbol: ${ticker}`); }
+                currentStockData = { ticker, quote, profile, metrics };
+                displayDashboard(ticker, quote, profile, metrics);
+            } catch (error) {
+                console.error("Finnhub API Error:", error);
+                thinkingMessage.innerHTML = `<strong class="text-red-400">Error:</strong> ${error.message}`;
+            }
+        }
+        
+        // Functions for getting and displaying data (getFundamentals, getBuySellOpinion, displayDashboard, renderTradingViewChart) remain the same
         function getFundamentals() {
             const { metrics, profile } = currentStockData;
             const metricData = metrics.metric || {};
             let fundamentalsHtml = `<div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Comprehensive Fundamentals for ${profile.name}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">`;
-
             const formatKey = (key) => key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
-
             for (const key in metricData) {
                 if (Object.hasOwnProperty.call(metricData, key) && metricData[key] !== null && metricData[key] !== "") {
                     const value = typeof metricData[key] === 'number' ? metricData[key].toFixed(2) : metricData[key];
                     fundamentalsHtml += `<div class="flex justify-between border-b border-gray-800 py-2"><span class="text-gray-400">${formatKey(key)}</span><span class="font-semibold text-white">${value}</span></div>`;
                 }
             }
-
             fundamentalsHtml += '</div></div>';
             return fundamentalsHtml;
         }
@@ -370,32 +381,6 @@
             return `<div class="flex items-center space-x-4"><span class="opinion-badge ${badgeClass}">${opinion}</span><h4 class="font-bold text-gray-300">Rule-Based Opinion</h4></div><ul class="mt-2 text-gray-400 list-disc list-inside text-sm space-y-1">${reasons.map(r => `<li>${r}</li>`).join('')}</ul><p class="text-xs text-gray-500 mt-3">This is an automated opinion based on financial metrics and is not financial advice.</p>`;
         }
 
-        async function getStockData(query) {
-            if (!finnhubApiKey) { appendChatMessage('Please set your Finnhub API key using the ⚙️ icon first.', 'bot'); return; }
-            appendChatMessage(query, 'user');
-            const thinkingMessage = appendChatMessage(`Searching for company: "${query}"...`, 'bot');
-            try {
-                const upperQuery = query.toUpperCase();
-                const searchRes = await fetch(`https://finnhub.io/api/v1/search?q=${upperQuery}&token=${finnhubApiKey}`);
-                const searchData = await searchRes.json();
-                if (!searchData.result || searchData.result.length === 0) { throw new Error(`Could not find a stock symbol for "${query}".`); }
-                const ticker = searchData.result[0].symbol;
-                thinkingMessage.innerText = `Found symbol ${ticker}. Fetching financial data...`;
-                const [quote, profile, metrics] = await Promise.all([
-                    fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
-                    fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${finnhubApiKey}`).then(res => res.json()),
-                    fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${finnhubApiKey}`).then(res => res.json())
-                ]);
-                if (quote.c === 0 && !profile.name) { throw new Error(`Invalid or delisted ticker symbol: ${ticker}`); }
-                currentStockData = { ticker, quote, profile, metrics };
-                thinkingMessage.remove(); 
-                displayDashboard(ticker, quote, profile, metrics);
-            } catch (error) {
-                console.error("Finnhub API Error:", error);
-                thinkingMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
-            }
-        }
-
         function displayDashboard(ticker, quote, profile, metrics) {
             const metricData = metrics.metric || {};
             const change = quote.d >= 0 ? `+${quote.d.toFixed(2)}` : quote.d.toFixed(2);
@@ -408,14 +393,12 @@
                 if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
                 return num;
             };
-
             const chartId = `chart-${Date.now()}`;
-
             const dashboardHtml = `
                 <div class="w-full space-y-4">
                     <div class="dashboard-card"><div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold text-white">${profile.name || ticker} (${profile.ticker})</h2><p class="text-gray-400">${profile.exchange || 'N/A'}</p></div><img src="${profile.logo}" alt="Logo" class="w-16 h-16 rounded-full" onerror="this.style.display='none'"></div></div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="dashboard-card text-center"><p class="metric-label">Current Price</p><p class="metric-value">$${quote.c.toFixed(2)}</p><p class="${changeColor}">${change} (${changePercent})</p></div><div class="dashboard-card text-center"><p class="metric-label">Beta</p><p class="metric-value">${metricData.beta ? metricData.beta.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">P/E Ratio (TTM)</p><p class="metric-value">${metricData.peTTM ? metricData.peTTM.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">Dividend Yield</p><p class="metric-value">${metricData.dividendYieldIndicatedAnnual ? (metricData.dividendYieldIndicatedAnnual).toFixed(2) : '0.00'}%</p></div></div>
-                    <div class="dashboard-card"><h3 class="font-bold mb-4 text-gray-300">Key Fundamentals</h3><div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">${[{label: 'Market Cap', value: formatLargeNumber(profile.marketCapitalization * 1e6)}, {label: '52-Week High', value: `$${metricData['52WeekHigh']}`}, {label: '52-Week Low', value: `$${metricData['52WeekLow']}`}, {label: 'EPS (TTM)', value: `$${metricData.epsTTM}`}, {label: 'Revenue/Share', value: `$${metricData.revenuePerShareTTM}`}, {label: 'Book Value/Share', value: `$${metricData.bookValuePerShareQuarterly}`}].map(item => `<div class="bg-gray-900 p-3 rounded-lg"><p class="text-sm text-gray-400">${item.label}</p><p class="font-bold text-lg text-white">${item.value || 'N/A'}</p></div>`).join('')}</div></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"><div class="dashboard-card text-center"><p class="metric-label">Current Price</p><p class="metric-value">$${quote.c.toFixed(2)}</p><p class="${changeColor}">${change} (${changePercent})</p></div><div class="dashboard-card text-center"><p class="metric-label">Beta</p><p class="metric-value">${metricData.beta ? metricData.beta.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">P/E Ratio (TTM)</p><p class="metric-value">${metricData.peTTM ? metricData.peTTM.toFixed(2) : 'N/A'}</p></div><div class="dashboard-card text-center"><p class="metric-label">Dividend Yield</p><p class="metric-value">${metricData.dividendYieldIndicatedAnnual ? (metricData.dividendYieldIndicatedAnnual).toFixed(2) : '0.00'}%</p></div></div>
+                    <div class="dashboard-card"><h3 class="font-bold mb-4 text-gray-300">Key Fundamentals</h3><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-center">${[{label: 'Market Cap', value: formatLargeNumber(profile.marketCapitalization * 1e6)}, {label: '52-Week High', value: `$${metricData['52WeekHigh']}`}, {label: '52-Week Low', value: `$${metricData['52WeekLow']}`}, {label: 'EPS (TTM)', value: `$${metricData.epsTTM}`}, {label: 'Revenue/Share', value: `$${metricData.revenuePerShareTTM}`}, {label: 'Book Value/Share', value: `$${metricData.bookValuePerShareQuarterly}`}].map(item => `<div class="bg-gray-900 p-3 rounded-lg"><p class="text-sm text-gray-400">${item.label}</p><p class="font-bold text-lg text-white">${item.value || 'N/A'}</p></div>`).join('')}</div></div>
                     <div class="dashboard-card"><h3 class="font-bold text-gray-300 mb-4">Historical Price Chart</h3><div id="${chartId}" style="height: 800px; width: 100%;"></div><div class="text-center mt-2"><a href="https://www.tradingview.com/symbols/${ticker}/" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 hover:text-indigo-400 transition-colors">View on TradingView</a></div></div>
                     <div class="bot-message"><div class="flex flex-wrap gap-2 justify-center">${['Graph', 'Buy or Sell', 'Fundamentals'].map(cmd => `<button data-command="${cmd}" class="command-suggestion">${cmd}</button>`).join('')}</div></div>
                 </div>`;
@@ -437,18 +420,7 @@
                 if (!container) return;
                 container.innerHTML = '';
                 new TradingView.widget({
-                    "width": "100%",
-                    "height": "100%",
-                    "symbol": ticker,
-                    "interval": "D",
-                    "timezone": "Etc/UTC",
-                    "theme": "dark",
-                    "style": "1",
-                    "locale": "en",
-                    "toolbar_bg": "#f1f3f6",
-                    "enable_publishing": false,
-                    "allow_symbol_change": true,
-                    "container_id": containerId
+                    "width": "100%", "height": "100%", "symbol": ticker, "interval": "D", "timezone": "Etc/UTC", "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "allow_symbol_change": true, "container_id": containerId
                 });
             }, 100);
         }
